@@ -1,0 +1,34 @@
+/* 文字 */
+.text-main{
+	color: #FB7299;
+}
+.text-main-hover{
+	/* color: #FB85A7; */
+	color: #d6bc52;
+}
+.text-main-disabled{
+	color: #FB85A7;
+}
+/* 背景 */
+.bg-main{
+	background-color: #FB7299;
+}
+.bg-main-hover{
+	background-color: #FB85A7;
+}
+.bg-main-disabled{
+	background-color: #FB85A7;
+}
+/* 边框 */
+.border-main{
+	border-color: #FB7299!important;
+}
+/* 行高 */
+.line-h{
+	line-height: 1.2;
+}
+/* 分割线 */
+.f-divider{
+	height: 18rpx;
+	background-color: #F5F5F4;
+}

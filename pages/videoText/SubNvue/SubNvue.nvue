@@ -1,0 +1,137 @@
+<template>
+	<view class="bg-dark">
+		<video src="/static/video/2a63d467-21f2-47d3-9374-ad6b6510195d.mp4" id="video" ref="video" :controls="false"
+			style="width: 750rpx; height:225px" @fullscreenchange="fullscreenchange" @timeupdate="timeupdate"
+			@play="isplay=true" @pause="isplay=false" show-center-play-btn="false" show-fullscreen-btn="false"
+			show-progress="false"
+			poster="https://ts1.cn.mm.bing.net/th/id/R-C.9d8a96bd65a019ba06cb59b286049cf9?rik=bs0DV1%2feLLyv0w&riu=http%3a%2f%2fhao5.qhimg.com%2ft013cdbbf054e85312e.jpg%3fsize%3d1282x818&ehk=CqVoMD2%2bobbh1kMr%2bBq6sKvDE3qiw8lnE5D3QrE6nsA%3d&risl=&pid=ImgRaw&r=0"></video>
+
+		<!--  不是全屏 -->
+		<!-- 自定义视频顶部 -->
+		<view class="video-opctay-top position-fixed top-0 left-0 right-0">
+			<!-- <view :style="'height'+statusBarHeight+'px'"></view> -->
+			<view style="height: 26px;"></view>
+			<view style="height: 26px;" class="flex align-center">
+				<view class="video-btn " @click="back()">
+				    <!-- 返回按钮 -->
+					<text class="iconfont" style="font-size: 20px; color:#036EB8">&#xe623;</text>
+					<!-- 这里的&#xe623;是阿里图标库的图像在线代码 -->
+					<!-- text标签不要换行，在nvue中默认换行他也换行 -->
+				</view>
+			</view>
+		</view>
+
+		<!-- 自定义视频底部-->
+		<view class=" video-opctay-bot position-fixed bottom-0 left-0 right-0">
+			<view class="flex align-stretch" style="height: 40px;">
+				<!-- align-stretch是css flex样式中align-item:stretch属性，作用是	默认。项目被拉伸以适合容器。 -->
+				<view class="video-btn" @click="videoPlayOrPaused()">
+					<!-- 播放按钮 -->
+					<text class="iconfont" v-if="!isplay" style="font-size: 30px; color:#036EB8">&#xe62f;</text>
+					<!-- 暂停按钮 -->
+					<text class="iconfont" v-else style="font-size: 30px; color:#036EB8">&#xe626;</text>
+				</view>
+				<!-- 控制条的样式配置！！！！非常重要！！！ -->
+				<view class="flex-1">
+					<view style="height: 40px;" class="flex position-relative align-center">
+						<!-- 中间的外层盒子高度设置 -->
+						<view class="flex-1 rounded" style="  height: 3px; background-color: rgba(255,255,255,0.5)">
+							<!-- 控制条的长度样式 -->
+							<view style="background-color: #036EB8; height:3px; width:20px;"></view> <!-- 进度条的样式 -->
+						</view>
+						<view class="position-absolute rounded-circle"
+							style="height: 25rpx; width:25rpx; left: 50px; background-color: #036EB8"></view>
+						<!-- 父相子绝，这里是拉动原点 -->
+					</view>
+				</view>
+				<view class="flex align-center justify-center"><text class="font-sm text-white">12:25/25:00</text>
+				</view><!-- 时间文本显示 -->
+
+				<view class="video-btn ">
+					<!-- 放大按钮 -->
+					<text class="iconfont" style="font-size: 30px; color:#036EB8">&#xe60d;</text>
+				</view>
+
+			</view>
+		</view>
+	</view>
+</template>
+
+<script>
+	let videoCtx = null //获取video的节点
+	const domModule = uni.requireNativePlugin(
+		'dom') //Weex 提供 DOM.addRule 以加载自定义字体。开发者可以通过指定 font-family加载 iconfont 和 custom font。开发者可以使用下面的代码加载自定义字体：
+	export default {
+
+		data() {
+			return {
+				isplay: false, //播放的状态
+				statusBarHeight: 0, //状态栏的信息
+			}
+		},
+
+		created() { //在页面加载的时候
+			// console.log(uni.getSystemInfoSync())
+			let res = uni.getSystemInfoSync() //同步获取页面的状态栏信息
+			this.statusBarHeight = res.statusBarHeight
+			domModule.addRule('fontFace', {
+				'fontFamily': "iconfont", //这里的fontfamily命名最好是和class中fontsize一致
+				'src': "url('http://at.alicdn.com/t/c/font_2852955_of1w6jui8j.ttf')" //阿里图标库的在线生成地址网页链接
+			});
+		},
+
+
+		mounted() {
+
+
+			// console.log(this.$refs)this.$refs可以获取所有class被设置为ref的节点属性
+			videoCtx = this.$refs.video
+		}, //直接使用 ref，例如 this.$refs.video1
+
+		methods: {
+			
+			back(){//返回
+				
+			},
+
+			videoPlayOrPaused() { //播放停止按钮
+				if (this.isplay) {
+					videoCtx.pause()
+				} else {
+					videoCtx.play()
+				}
+			},
+
+
+			fullscreenchange(e) {
+				// console.log(e)
+			}, //当视频进入和退出全屏时触发，event.detail = {fullScreen, direction}，direction取为 vertical 或 horizontal
+
+			timeupdate(e) {
+				// console.log(e.detail.currentTime, e.detail.duration)
+			}, //播放进度变化时触发，event.detail = {currentTime, duration} 。触发频率 250ms 一次
+
+		}
+
+	}
+</script>
+
+<style>
+	.video-btn {
+		width: 44px;
+		height: 44px;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+
+	}
+
+	.video-opctay-top {
+		background-image: linear-gradient(to top, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.4));
+	}
+
+	.video-opctay-bot {
+		background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.7));
+	}
+</style>
