@@ -13,7 +13,7 @@
 			<view style="height: 26px;"></view>
 			<view style="height: 26px;" class="flex align-center">
 				<view class="video-btn " @click="back()">
-				    <!-- 返回按钮 -->
+					<!-- 返回按钮 -->
 					<text class="iconfont" style="font-size: 20px; color:#036EB8">&#xe623;</text>
 					<!-- 这里的&#xe623;是阿里图标库的图像在线代码 -->
 					<!-- text标签不要换行，在nvue中默认换行他也换行 -->
@@ -44,7 +44,8 @@
 						<!-- 父相子绝，这里是拉动原点 -->
 					</view>
 				</view>
-				<view class="flex align-center justify-center"><text class="font-sm text-white">12:25/25:00</text>
+				<view class="flex align-center justify-center"><text
+						class="font-sm text-white">{{currentTime|formatTime}}/{{duration|formatTime}}</text>
 				</view><!-- 时间文本显示 -->
 
 				<view class="video-btn ">
@@ -67,8 +68,29 @@
 			return {
 				isplay: false, //播放的状态
 				statusBarHeight: 0, //状态栏的信息
+				currentTime: 0, //当前时长
+				duration: 0, //总时长
+
 			}
 		},
+
+		filters: {
+			//时间过滤器
+			formatTime(result) {
+				var h = Math.floor(result / 3600) < 10 ? '0' + Math.floor(result / 3600) : Math.floor(result / 3600);
+
+				var m = Math.floor((result / 60 % 60)) < 10 ? '0' + Math.floor((result / 60 % 60)) : Math.floor((result /
+					60 % 60));
+
+				var s = Math.floor((result % 60)) < 10 ? '0' + Math.floor((result % 60)) : Math.floor((result % 60));
+				return result = result > 3600 ? (h + ':' + m + ':' + s) : m + ':' + s
+			}
+
+
+		},
+
+
+
 
 		created() { //在页面加载的时候
 			// console.log(uni.getSystemInfoSync())
@@ -89,9 +111,14 @@
 		}, //直接使用 ref，例如 this.$refs.video1
 
 		methods: {
-			
-			back(){//返回
-				
+
+			back() { //返回
+				// uni.navigateBack({
+				// 	delta:1
+				// })
+				uni.navigateTo({
+					url: "/pages/index/index"
+				})
 			},
 
 			videoPlayOrPaused() { //播放停止按钮
@@ -108,6 +135,9 @@
 			}, //当视频进入和退出全屏时触发，event.detail = {fullScreen, direction}，direction取为 vertical 或 horizontal
 
 			timeupdate(e) {
+				this.currentTime = parseInt(e.detail.currentTime)
+				this.duration = parseInt(e.detail.duration)
+
 				// console.log(e.detail.currentTime, e.detail.duration)
 			}, //播放进度变化时触发，event.detail = {currentTime, duration} 。触发频率 250ms 一次
 
