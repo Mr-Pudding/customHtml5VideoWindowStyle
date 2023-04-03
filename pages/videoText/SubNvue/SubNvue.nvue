@@ -33,18 +33,9 @@
 				</view>
 				<!-- 控制条的样式配置！！！！非常重要！！！ -->
 				<view class="flex-1">
-					<view style="height: 40px;" class="flex position-relative align-center">
-						<!-- 中间的外层盒子高度设置 -->
-						<view class="flex-1 rounded" style="  height: 3px; background-color: rgba(255,255,255,0.5)">
-							<!-- 控制条的长度样式 -->
-							<view style="background-color: #036EB8; height:3px; width:20px;"></view> <!-- 进度条的样式 -->
-						</view>
-						<view class="position-absolute rounded-circle"
-							style="height: 25rpx; width:25rpx; left: 50px; background-color: #036EB8"></view>
-						<!-- 父相子绝，这里是拉动原点 -->
-					</view>
+					<progress :curTime="currentTime" :duration="duration"></progress>
 				</view>
-				<view class="flex align-center justify-center"><text
+				<view class="flex align-center justify-center" style="width: 80px;"><text
 						class="font-sm text-white">{{currentTime|formatTime}}/{{duration|formatTime}}</text>
 				</view><!-- 时间文本显示 -->
 
@@ -59,6 +50,9 @@
 </template>
 
 <script>
+	//进度条组件引入
+	import progress from "../components/progress.vue"
+
 	let videoCtx = null //获取video的节点
 	const domModule = uni.requireNativePlugin(
 		'dom') //Weex 提供 DOM.addRule 以加载自定义字体。开发者可以通过指定 font-family加载 iconfont 和 custom font。开发者可以使用下面的代码加载自定义字体：
@@ -70,8 +64,22 @@
 				statusBarHeight: 0, //状态栏的信息
 				currentTime: 0, //当前时长
 				duration: 0, //总时长
+				windowHeight: 0,
+				windowWidth: 0,
 
 			}
+		},
+
+		provide() { //依赖注入,要和inject一起使用
+			return {
+				v: this
+			}
+		},
+
+		//组件
+		components: {
+			progress
+
 		},
 
 		filters: {
@@ -85,33 +93,28 @@
 				var s = Math.floor((result % 60)) < 10 ? '0' + Math.floor((result % 60)) : Math.floor((result % 60));
 				return result = result > 3600 ? (h + ':' + m + ':' + s) : m + ':' + s
 			}
-
-
 		},
 
-
-
-
-		created() { //在页面加载的时候
+		created() { //在页面创建的时候
 			// console.log(uni.getSystemInfoSync())
 			let res = uni.getSystemInfoSync() //同步获取页面的状态栏信息
 			this.statusBarHeight = res.statusBarHeight
+
+			this.windowHeight = res.windowHeight
+			this.windowWidth = res.windowWidth//400
+
 			domModule.addRule('fontFace', {
 				'fontFamily': "iconfont", //这里的fontfamily命名最好是和class中fontsize一致
 				'src': "url('http://at.alicdn.com/t/c/font_2852955_of1w6jui8j.ttf')" //阿里图标库的在线生成地址网页链接
 			});
 		},
 
-
 		mounted() {
-
-
 			// console.log(this.$refs)this.$refs可以获取所有class被设置为ref的节点属性
 			videoCtx = this.$refs.video
 		}, //直接使用 ref，例如 this.$refs.video1
 
 		methods: {
-
 			back() { //返回
 				// uni.navigateBack({
 				// 	delta:1
@@ -128,7 +131,6 @@
 					videoCtx.play()
 				}
 			},
-
 
 			fullscreenchange(e) {
 				// console.log(e)
