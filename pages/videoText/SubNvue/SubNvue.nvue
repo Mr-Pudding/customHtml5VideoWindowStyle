@@ -33,7 +33,7 @@
 				</view>
 				<!-- 控制条的样式配置！！！！非常重要！！！ -->
 				<view class="flex-1">
-					<progress :curTime="currentTime" :duration="duration"></progress>
+					<progress :curTime="currentTime" :duration="duration" @valueChange="propressValueChange"></progress>
 				</view>
 				<view class="flex align-center justify-center" style="width: 80px;"><text
 						class="font-sm text-white">{{currentTime|formatTime}}/{{duration|formatTime}}</text>
@@ -79,7 +79,6 @@
 		//组件
 		components: {
 			progress
-
 		},
 
 		filters: {
@@ -142,6 +141,12 @@
 
 				// console.log(e.detail.currentTime, e.detail.duration)
 			}, //播放进度变化时触发，event.detail = {currentTime, duration} 。触发频率 250ms 一次
+			
+			propressValueChange(e){
+				videoCtx.seek(e)//seek(position)跳转到指定位置，单位 s
+				console.log(e)
+				console.log(this.currentTime)
+			},
 
 		}
 
