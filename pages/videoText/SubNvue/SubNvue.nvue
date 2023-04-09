@@ -4,7 +4,15 @@
 			style="width: 750rpx; height:225px" @fullscreenchange="fullscreenchange" @timeupdate="timeupdate"
 			@play="isplay=true" @pause="isplay=false" show-center-play-btn="false" show-fullscreen-btn="false"
 			show-progress="false"
-			poster="https://ts1.cn.mm.bing.net/th/id/R-C.9d8a96bd65a019ba06cb59b286049cf9?rik=bs0DV1%2feLLyv0w&riu=http%3a%2f%2fhao5.qhimg.com%2ft013cdbbf054e85312e.jpg%3fsize%3d1282x818&ehk=CqVoMD2%2bobbh1kMr%2bBq6sKvDE3qiw8lnE5D3QrE6nsA%3d&risl=&pid=ImgRaw&r=0"></video>
+			poster="https://ts1.cn.mm.bing.net/th/id/R-C.9d8a96bd65a019ba06cb59b286049cf9?rik=bs0DV1%2feLLyv0w&riu=http%3a%2f%2fhao5.qhimg.com%2ft013cdbbf054e85312e.jpg%3fsize%3d1282x818&ehk=CqVoMD2%2bobbh1kMr%2bBq6sKvDE3qiw8lnE5D3QrE6nsA%3d&risl=&pid=ImgRaw&r=0">
+			<view class="position-absolute flex align-center justify-center"  :style="videoFullScreen">
+				<!-- 提示框 -->
+				<view v-if="staticTime" class="p-2 rounded" style="background-color: rgba(0,0,0,0.3);">
+					<text class="font text-white">{{currentTime|formatTime}}/{{duration|formatTime}}</text>
+				</view>
+			</view>
+			<!-- nvue的渲染是从上向下进行的渲染  :style动态的绑定全屏与单竖屏的高宽-->
+		</video>
 
 		<!--  不是全屏 -->
 		<!-- 自定义视频顶部 -->
@@ -33,7 +41,7 @@
 				</view>
 				<!-- 控制条的样式配置！！！！非常重要！！！ -->
 				<view class="flex-1">
-					<progress :curTime="currentTime" :duration="duration" @valueChange="propressValueChange"></progress>
+					<progress :curTime="currentTime" :duration="duration" @valueChange="propressValueChange" @update="screenTimeUpdate"></progress>
 				</view>
 				<view class="flex align-center justify-center" style="width: 80px;"><text
 						class="font-sm text-white">{{currentTime|formatTime}}/{{duration|formatTime}}</text>
@@ -66,6 +74,8 @@
 				duration: 0, //总时长
 				windowHeight: 0,
 				windowWidth: 0,
+				screenStatus:false,//默认不是全屏
+				staticTime:false,//屏幕中间时长拖动提示框显示与否
 
 			}
 		},
@@ -75,6 +85,13 @@
 				v: this
 			}
 		},
+		
+		computed:{
+			//屏幕状态大小计算
+			videoFullScreen(){
+				return this.screenStatus? `width:${this.windowWidth}; height:${this.windowHeight}` : 'width:750rpx;height:225px;'
+			}
+		},
 
 		//组件
 		components: {
@@ -82,7 +99,7 @@
 		},
 
 		filters: {
-			//时间过滤器
+			//时间过滤器，vue3.0已抛弃
 			formatTime(result) {
 				var h = Math.floor(result / 3600) < 10 ? '0' + Math.floor(result / 3600) : Math.floor(result / 3600);
 
@@ -100,7 +117,7 @@
 			this.statusBarHeight = res.statusBarHeight
 
 			this.windowHeight = res.windowHeight
-			this.windowWidth = res.windowWidth//400
+			this.windowWidth = res.windowWidth //400
 
 			domModule.addRule('fontFace', {
 				'fontFamily': "iconfont", //这里的fontfamily命名最好是和class中fontsize一致
@@ -136,17 +153,27 @@
 			}, //当视频进入和退出全屏时触发，event.detail = {fullScreen, direction}，direction取为 vertical 或 horizontal
 
 			timeupdate(e) {
-				this.currentTime = parseInt(e.detail.currentTime)
-				this.duration = parseInt(e.detail.duration)
+				if(!this.staticTime){
+				    this.currentTime = parseInt(e.detail.currentTime)
+				    this.duration = parseInt(e.detail.duration)
+				}
+				
+			
 
 				// console.log(e.detail.currentTime, e.detail.duration)
 			}, //播放进度变化时触发，event.detail = {currentTime, duration} 。触发频率 250ms 一次
-			
-			propressValueChange(e){
-				videoCtx.seek(e)//seek(position)跳转到指定位置，单位 s
-				console.log(e)
-				console.log(this.currentTime)
+
+			propressValueChange(e) {
+				videoCtx.seek(e) //api方法 seek(position)跳转到指定位置，单位 s
+				this.staticTime=false//@touchend api在propress子组件中进度条拖动事件结束时调用
+				videoCtx.play()
 			},
+			
+			screenTimeUpdate(e){
+				videoCtx.pause()
+				this.staticTime=true
+				this.currentTime=e
+			},//从组件progress传来的值，e是子组件中的currtTime
 
 		}
 

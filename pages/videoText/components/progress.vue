@@ -1,6 +1,6 @@
 <template>
 	<view>
-		<view @touchstart="propressMoveStart" @touchmove="propressMove" @touchend="propressMoveEnd"
+		<view @touchstart="propressMoveStart" @touchmove="propressMove" @touchend="propressMoveEnd" @touchcancel="interruptSpellCasting"
 			style="height: 40px;" class="flex position-relative align-center">
 			<!-- 中间的外层盒子高度设置 -->
 			<view class="flex-1 rounded" style="  height: 3px; background-color: rgba(255,255,255,0.5)">
@@ -42,7 +42,7 @@
 			propressRound() {
 				return `left:${this.left}px`
 			},
-          
+
 			currentTime() {
 				return this.left == 0 ? 0 : (this.left / this.width) * this.duration
 			}
@@ -63,6 +63,7 @@
 				this.left = this.duration == 0 ? 0 : (this.curTime / this.duration) * this.width //进度发生变化的计算
 			}, //当前进度条的时间变化计算
 
+			//e是api触摸事件默认的事件对象
 			propressMoveStart(e) {
 				this.moveStatus = true
 				let pointPropress = e.changedTouches[0].screenX - 44
@@ -78,10 +79,14 @@
 			propressMoveEnd(e) {
 				this.moveStatus = false
 				//$emit子父通信
-				this.$emit("valueChange",this.currentTime)
+				this.$emit("valueChange", this.currentTime)
 			}, //进度条拖动结束
+            
 			
-			
+			interruptSpellCasting(e){
+				this.propressMoveEnd(e)
+			},//突然被中断，比如打电话之类的
+
 			propressMove(e) {
 				this.moveStatus = true
 				let propressRround = e.changedTouches[0].screenX - 44
@@ -93,6 +98,7 @@
 				} else {
 					this.left = propressRround
 				}
+				this.$emit('update',this.currentTime)
 			} //进度条移动
 		}
 
