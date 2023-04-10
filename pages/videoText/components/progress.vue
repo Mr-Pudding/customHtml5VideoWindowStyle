@@ -1,7 +1,7 @@
 <template>
 	<view>
-		<view @touchstart="propressMoveStart" @touchmove="propressMove" @touchend="propressMoveEnd" @touchcancel="interruptSpellCasting"
-			style="height: 40px;" class="flex position-relative align-center">
+		<view @touchstart="propressMoveStart" @touchmove="propressMove" @touchend="propressMoveEnd"
+			@touchcancel="interruptSpellCasting" style="height: 40px;" class="flex position-relative align-center">
 			<!-- 中间的外层盒子高度设置 -->
 			<view class="flex-1 rounded" style="  height: 3px; background-color: rgba(255,255,255,0.5)">
 				<!-- 控制条的长度样式 -->
@@ -81,11 +81,11 @@
 				//$emit子父通信
 				this.$emit("valueChange", this.currentTime)
 			}, //进度条拖动结束
-            
-			
-			interruptSpellCasting(e){
+
+
+			interruptSpellCasting(e) {
 				this.propressMoveEnd(e)
-			},//突然被中断，比如打电话之类的
+			}, //突然被中断，比如打电话之类的
 
 			propressMove(e) {
 				this.moveStatus = true
@@ -98,7 +98,7 @@
 				} else {
 					this.left = propressRround
 				}
-				this.$emit('update',this.currentTime)
+				this.$emit('update', this.currentTime)
 			} //进度条移动
 		}
 

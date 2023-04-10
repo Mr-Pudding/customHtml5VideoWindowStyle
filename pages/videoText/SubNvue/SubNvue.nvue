@@ -5,10 +5,16 @@
 			@play="isplay=true" @pause="isplay=false" show-center-play-btn="false" show-fullscreen-btn="false"
 			show-progress="false"
 			poster="https://ts1.cn.mm.bing.net/th/id/R-C.9d8a96bd65a019ba06cb59b286049cf9?rik=bs0DV1%2feLLyv0w&riu=http%3a%2f%2fhao5.qhimg.com%2ft013cdbbf054e85312e.jpg%3fsize%3d1282x818&ehk=CqVoMD2%2bobbh1kMr%2bBq6sKvDE3qiw8lnE5D3QrE6nsA%3d&risl=&pid=ImgRaw&r=0">
-			<view class="position-absolute flex align-center justify-center"  :style="videoFullScreen">
+			<view class="position-absolute flex align-center justify-center" :style="videoFullScreen">
+				<!-- 双击事件蒙板 -->
+				<view class="position-absolute left-0 right-0 bg-dark" :style="modalStyle"></view>
 				<!-- 提示框 -->
 				<view v-if="staticTime" class="p-2 rounded" style="background-color: rgba(0,0,0,0.3);">
-					<text class="font text-white">{{currentTime|formatTime}}/{{duration|formatTime}}</text>
+					<text v-if="promptBoxStatus.type=='time'"
+						class="font text-white">{{currentTime|formatTime}}/{{duration|formatTime}}</text>
+					<text v-if="promptBoxStatus.type=='message'"
+						class="font text-white">{{promptBoxStatus.message}}</text>
+
 				</view>
 			</view>
 			<!-- nvue的渲染是从上向下进行的渲染  :style动态的绑定全屏与单竖屏的高宽-->
@@ -16,7 +22,7 @@
 
 		<!--  不是全屏 -->
 		<!-- 自定义视频顶部 -->
-		<view class="video-opctay-top position-fixed top-0 left-0 right-0">
+		<view v-if="topControlBarShow" class="video-opctay-top position-fixed top-0 left-0 right-0">
 			<!-- <view :style="'height'+statusBarHeight+'px'"></view> -->
 			<view style="height: 26px;"></view>
 			<view style="height: 26px;" class="flex align-center">
@@ -30,7 +36,7 @@
 		</view>
 
 		<!-- 自定义视频底部-->
-		<view class=" video-opctay-bot position-fixed bottom-0 left-0 right-0">
+		<view v-if="bottomControlBarShow" class=" video-opctay-bot position-fixed bottom-0 left-0 right-0">
 			<view class="flex align-stretch" style="height: 40px;">
 				<!-- align-stretch是css flex样式中align-item:stretch属性，作用是	默认。项目被拉伸以适合容器。 -->
 				<view class="video-btn" @click="videoPlayOrPaused()">
@@ -41,7 +47,8 @@
 				</view>
 				<!-- 控制条的样式配置！！！！非常重要！！！ -->
 				<view class="flex-1">
-					<progress :curTime="currentTime" :duration="duration" @valueChange="propressValueChange" @update="screenTimeUpdate"></progress>
+					<progress :curTime="currentTime" :duration="duration" @valueChange="propressValueChange"
+						@update="screenTimeUpdate"></progress>
 				</view>
 				<view class="flex align-center justify-center" style="width: 80px;"><text
 						class="font-sm text-white">{{currentTime|formatTime}}/{{duration|formatTime}}</text>
@@ -62,6 +69,10 @@
 	import progress from "../components/progress.vue"
 
 	let videoCtx = null //获取video的节点
+
+	let promptBoxStatusShowSTOut = null //提示框的定时器
+
+	let controlStOut = null //控制条显示的定时器
 	const domModule = uni.requireNativePlugin(
 		'dom') //Weex 提供 DOM.addRule 以加载自定义字体。开发者可以通过指定 font-family加载 iconfont 和 custom font。开发者可以使用下面的代码加载自定义字体：
 	export default {
@@ -74,9 +85,14 @@
 				duration: 0, //总时长
 				windowHeight: 0,
 				windowWidth: 0,
-				screenStatus:false,//默认不是全屏
-				staticTime:false,//屏幕中间时长拖动提示框显示与否
-
+				screenStatus: false, //默认不是全屏
+				staticTime: false, //屏幕中间时长拖动提示框显示与否
+				promptBoxStatus: {
+					type: 'message',
+					message: '提示'
+				},
+				bottomControlBarShow: true, //底部控制条显示与否
+				topControlBarShow: true, //顶部控制条显示与否
 			}
 		},
 
@@ -85,11 +101,17 @@
 				v: this
 			}
 		},
-		
-		computed:{
+
+		computed: {
 			//屏幕状态大小计算
-			videoFullScreen(){
-				return this.screenStatus? `width:${this.windowWidth}; height:${this.windowHeight}` : 'width:750rpx;height:225px;'
+			videoFullScreen() {
+				return this.screenStatus ? `width:${this.windowWidth}; height:${this.windowHeight}` :
+					'width:750rpx;height:225px;'
+			},
+
+			modalStyle() {
+				let top = this.statusBarHeight + 44
+				return `top:${top}px;bottom:44px` //计算蒙板的高度
 			}
 		},
 
@@ -131,6 +153,25 @@
 		}, //直接使用 ref，例如 this.$refs.video1
 
 		methods: {
+
+			controlBarShowStatus() {
+				this.bottomControlBarShow = true
+				this.topControlBarShow = true
+
+				if (controlStOut) {
+					clearTimeout(controlStOut)
+				}
+				controlStOut = setTimeout(() => {
+					this.controlBarHideStatus()
+					controlStOut = null
+				}, 3000)
+			}, //控制条显示状态
+
+			controlBarHideStatus() {
+				this.topControlBarShow = false
+				this.bottomControlBarShow = false
+			}, //控制条隐藏状态
+
 			back() { //返回
 				// uni.navigateBack({
 				// 	delta:1
@@ -141,9 +182,14 @@
 			},
 
 			videoPlayOrPaused() { //播放停止按钮
+				this.promptBoxStatusShow({
+					message: this.isplay ? '暂停' : '播放'
+				})
+
 				if (this.isplay) {
 					videoCtx.pause()
 				} else {
+					this.controlBarShowStatus() //控制条显示状态
 					videoCtx.play()
 				}
 			},
@@ -153,27 +199,44 @@
 			}, //当视频进入和退出全屏时触发，event.detail = {fullScreen, direction}，direction取为 vertical 或 horizontal
 
 			timeupdate(e) {
-				if(!this.staticTime){
-				    this.currentTime = parseInt(e.detail.currentTime)
-				    this.duration = parseInt(e.detail.duration)
+				if (!this.staticTime) {
+					this.currentTime = parseInt(e.detail.currentTime)
+					this.duration = parseInt(e.detail.duration)
 				}
-				
-			
-
 				// console.log(e.detail.currentTime, e.detail.duration)
 			}, //播放进度变化时触发，event.detail = {currentTime, duration} 。触发频率 250ms 一次
 
 			propressValueChange(e) {
 				videoCtx.seek(e) //api方法 seek(position)跳转到指定位置，单位 s
-				this.staticTime=false//@touchend api在propress子组件中进度条拖动事件结束时调用
+				this.staticTime = false //@touchend api在propress子组件中进度条拖动事件结束时调用
 				videoCtx.play()
 			},
-			
-			screenTimeUpdate(e){
+
+			screenTimeUpdate(e) { //进度条变化的时候
 				videoCtx.pause()
-				this.staticTime=true
-				this.currentTime=e
-			},//从组件progress传来的值，e是子组件中的currtTime
+				this.staticTime = true //屏幕中间时长拖动提示框显示与否
+				this.currentTime = e
+				this.promptBoxStatusShow({
+					type: "time",
+					autoClose: false //
+				})
+				this.controlBarShowStatus() //控制条显示状态
+			}, //从组件progress传来的值，e是子组件中的currtTime
+
+			promptBoxStatusShow(options) {
+				this.promptBoxStatus.type = options.type || 'message'
+				this.promptBoxStatus.message = options.message || '提示'
+				this.staticTime = true //屏幕中间时长拖动提示框显示与否
+				if (options.autoClose !== false) { ///这里的autoClose是自定义属性,这里不太明白
+					if (promptBoxStatusShowSTOut) {
+						clearTimeout(promptBoxStatusShowSTOut)
+					}
+					promptBoxStatusShowSTOut = setTimeout(() => {
+						this.staticTime = false
+						promptBoxStatusShowSTOut = null
+					}, 500) //定时器定时显示提示消失
+				}
+			}
 
 		}
 
