@@ -1,13 +1,14 @@
 <template>
 	<view class="bg-dark">
 		<video src="/static/video/2a63d467-21f2-47d3-9374-ad6b6510195d.mp4" id="video" ref="video" :controls="false"
-			style="width: 750rpx; height:225px" @fullscreenchange="fullscreenchange" @timeupdate="timeupdate"
+			style="width: 750rpx; height:225px" @fullscreenchange="fullScreenChange" @timeupdate="timeupdate"
 			@play="isplay=true" @pause="isplay=false" show-center-play-btn="false" show-fullscreen-btn="false"
 			show-progress="false"
 			poster="https://ts1.cn.mm.bing.net/th/id/R-C.9d8a96bd65a019ba06cb59b286049cf9?rik=bs0DV1%2feLLyv0w&riu=http%3a%2f%2fhao5.qhimg.com%2ft013cdbbf054e85312e.jpg%3fsize%3d1282x818&ehk=CqVoMD2%2bobbh1kMr%2bBq6sKvDE3qiw8lnE5D3QrE6nsA%3d&risl=&pid=ImgRaw&r=0">
 			<view class="position-absolute flex align-center justify-center" :style="videoFullScreen">
 				<!-- 双击事件蒙板 -->
-				<view class="position-absolute left-0 right-0 bg-dark" :style="modalStyle"></view>
+				<view @touchstart="modalTouchS" @touchmove="modalTouchM" @touchend="modalTouchE"
+					class="position-absolute left-0 right-0" :style="modalStyle"></view>
 				<!-- 提示框 -->
 				<view v-if="staticTime" class="p-2 rounded" style="background-color: rgba(0,0,0,0.3);">
 					<text v-if="promptBoxStatus.type=='time'"
@@ -22,7 +23,7 @@
 
 		<!--  不是全屏 -->
 		<!-- 自定义视频顶部 -->
-		<view v-if="topControlBarShow" class="video-opctay-top position-fixed top-0 left-0 right-0">
+		<view v-if="bottomOrTopControlBarShow && !fullScreenStatus" class="video-opctay-top position-fixed top-0 left-0 right-0">
 			<!-- <view :style="'height'+statusBarHeight+'px'"></view> -->
 			<view style="height: 26px;"></view>
 			<view style="height: 26px;" class="flex align-center">
@@ -36,7 +37,7 @@
 		</view>
 
 		<!-- 自定义视频底部-->
-		<view v-if="bottomControlBarShow" class=" video-opctay-bot position-fixed bottom-0 left-0 right-0">
+		<view v-if="bottomOrTopControlBarShow && !fullScreenStatus" class=" video-opctay-bot position-fixed bottom-0 left-0 right-0">
 			<view class="flex align-stretch" style="height: 40px;">
 				<!-- align-stretch是css flex样式中align-item:stretch属性，作用是	默认。项目被拉伸以适合容器。 -->
 				<view class="video-btn" @click="videoPlayOrPaused()">
@@ -56,7 +57,7 @@
 
 				<view class="video-btn ">
 					<!-- 放大按钮 -->
-					<text class="iconfont" style="font-size: 30px; color:#036EB8">&#xe60d;</text>
+					<text @click="fullOrExitScreen()" class="iconfont" style="font-size: 30px; color:#036EB8">&#xe60d;</text>
 				</view>
 
 			</view>
@@ -91,8 +92,19 @@
 					type: 'message',
 					message: '提示'
 				},
-				bottomControlBarShow: true, //底部控制条显示与否
-				topControlBarShow: true, //顶部控制条显示与否
+
+				bottomOrTopControlBarShow: true, //顶部或底部控制条显示与否
+
+				oldTouchs: {
+
+				},
+
+				oldValue: {
+
+				},
+				dbcount: 0, //点击次数
+				touchType: null,
+				fullScreenStatus:false,//全屏状态，默认不是全屏
 			}
 		},
 
@@ -154,9 +166,78 @@
 
 		methods: {
 
+			modalTouchS(e) {
+				this.oldTouchs = e.changedTouches[0]
+
+				this.oldValue = {
+					currentTime: this.currentTime
+				} //旧的当前时间
+			}, //蒙版开始触摸
+
+			modalTouchM(e) {
+				let newTouchs = e.changedTouches[0] //获取新的坐标
+				if (!this.touchType) {
+					this.touchType = Math.abs(newTouchs.pageX - this.oldTouchs.pageX) > 20 ? 'current' : null
+
+					if (this.touchType === 'current') {
+						videoCtx.pause()
+					}
+				} else if (this.touchType === 'current') {
+					this.promptBoxStatusShow({
+						type: "time",
+						autoClose: false
+					})
+					this.controlBarShowStatus()
+
+					let newCurrentTime = (newTouchs.pageX - this.oldTouchs.pageX) / 250 * this.duration * 2 + this.oldValue
+						.currentTime * 1//核心算法拖动屏幕
+
+					newCurrentTime = newCurrentTime > this.duration ? this.duration : newCurrentTime
+
+					newCurrentTime = newCurrentTime < 0 ? 0 : newCurrentTime
+
+					this.currentTime = newCurrentTime
+				}
+
+			}, //蒙版移动中
+
+			modalTouchE(e) {
+				if (this.touchType === 'current') {
+					videoCtx.seek(this.currentTime)
+					videoCtx.play()
+
+				} else {
+					if (this.dbcount === 1 || this.dbcount === 0) {
+						this.dbcount++
+					}
+					if (this.dbcount > 0) {
+						setTimeout(() => {
+							if (this.dbcount === 1) {
+								// console.log("单击")
+
+								this.controlShowOrHide()
+							} //单击
+							if (this.dbcount === 2) {
+								this.videoPlayOrPaused()
+								// console.log("双击")
+							} //双击
+							this.dbcount = 0 //不论是双击还是单击最后都等于0
+						}, 250)
+					}
+				}
+				this.touchType = null
+				this.staticTime = false//关闭提示框
+			}, //蒙版结束，自定义单击，双击
+
+			//显示或隐藏控制条
+			controlShowOrHide() {
+				this.bottomOrTopControlBarShow ? this.controlBarHideStatus() : this.controlBarShowStatus()
+			},
+
 			controlBarShowStatus() {
-				this.bottomControlBarShow = true
-				this.topControlBarShow = true
+				// this.bottomControlBarShow = true
+				// this.topControlBarShow = true
+				this.bottomOrTopControlBarShow = true
 
 				if (controlStOut) {
 					clearTimeout(controlStOut)
@@ -168,8 +249,7 @@
 			}, //控制条显示状态
 
 			controlBarHideStatus() {
-				this.topControlBarShow = false
-				this.bottomControlBarShow = false
+				this.bottomOrTopControlBarShow = false
 			}, //控制条隐藏状态
 
 			back() { //返回
@@ -194,9 +274,20 @@
 				}
 			},
 
-			fullscreenchange(e) {
-				// console.log(e)
+			fullScreenChange(e) {
+				this.fullScreenStatus=e.detail.fullScreen
 			}, //当视频进入和退出全屏时触发，event.detail = {fullScreen, direction}，direction取为 vertical 或 horizontal
+			
+			fullOrExitScreen(){
+				if(this.fullScreenStatus){
+					videoCtx.exitFullScreen()//退出全屏
+				}else{
+					videoCtx.requestFullScreen()//进入全屏
+				}
+				//requestFullScreen进入全屏，可传{direction}参数
+				//exitFullScreen退出全屏
+			},//点击事件进入或者退出全屏
+			
 
 			timeupdate(e) {
 				if (!this.staticTime) {
