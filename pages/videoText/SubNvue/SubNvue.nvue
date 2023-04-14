@@ -37,46 +37,78 @@
 				<!-- 底部 -->
 				<view v-if="bottomOrTopControlBarShow && fullScreenStatus"
 					class=" video-opctay-bot position-absolute bottom-0 left-0 right-0">
-					<view class="" style="height: 88px;">
+					<view style="height: 88px;">
 						<!-- 控制条的样式配置！！！！非常重要！！！ -->
-						<view class="flex-1 flex align-center">
-							
-						<progress :curTime="currentTime" :duration="duration" @valueChange="propressValueChange"
-							@update="screenTimeUpdate"></progress>
+						<view class="flex-1" style="padding-left: 15px; padding-right:15px;">
+							<progress :curTime="currentTime" :duration="duration" @valueChange="propressValueChange"
+								@update="screenTimeUpdate"></progress>
 						</view>
-						
-						<view class="flex align-stretch" style="height: 40px;">
+
+						<view class="flex align-stretch justify-between" style="height: 40px;">
+							<!-- 	底部小图标的排列，外层justiffy-between两边分散 -->
 							<!-- align-stretch是css flex样式中align-item:stretch属性，作用是	默认。项目被拉伸以适合容器。 -->
-							<view class="video-btn" @click="videoPlayOrPaused()">
-								<!-- 播放按钮 -->
-								<text class="iconfont" v-if="!isplay" style="font-size: 30px; color:#036EB8">&#xe62f;</text>
-								<!-- 暂停按钮 -->
-								<text class="iconfont" v-else style="font-size: 30px; color:#036EB8">&#xe626;</text>
+							<!-- 左边的图标集合 -->
+							<view class="flex">
+								<view class="video-btn" @click="videoPlayOrPaused()">
+									<!-- 播放按钮 -->
+									<text class="iconfont" v-if="!isplay"
+										style="font-size: 30px; color:#036EB8">&#xe62f;</text>
+									<!-- 暂停按钮 -->
+									<text class="iconfont" v-else style="font-size: 30px; color:#036EB8">&#xe626;</text>
+								</view>
+
+								<view class="flex align-center justify-center" style="width: 80px;"><text
+										class="font-sm text-white">{{currentTime|formatTime}}/{{duration|formatTime}}</text>
+								</view><!-- 时间文本显示 -->
+
+								<view class="video-btn ">
+									<!-- 弹幕按钮 -->
+									<text @click="fullOrExitScreen()" class="iconfont"
+										style="font-size: 30px; color:#036EB8">&#xe665;</text>
+								</view>
+
 							</view>
-						
-							<view class="flex align-center justify-center" style="width: 80px;"><text
-									class="font-sm text-white">{{currentTime|formatTime}}/{{duration|formatTime}}</text>
-							</view><!-- 时间文本显示 -->
-						
-							<view class="video-btn ">
-								<!-- 放大按钮 -->
-								<text @click="fullOrExitScreen()" class="iconfont"
-									style="font-size: 30px; color:#036EB8">&#xe60d;</text>
+							<!-- 右边的图标集合 -->
+							<view class="flex">
+								<view class="flex align-center"
+									style="height: 40px; padding-left:15px;padding-right:15px ;">
+									<text class="text-white" style="font-size: 15px;">选集</text>
+								</view>
+
+								<view class="flex align-center"
+									style="height: 40px; padding-left:15px;padding-right:15px ;">
+									<text class="text-white" style="font-size: 15px;">清晰度</text>
+								</view>
+
+								<view class="flex align-center"
+									style="height: 40px; padding-left:15px;padding-right:15px ;">
+									<text class="text-white" style="font-size: 15px;">倍数</text>
+								</view>
+
 							</view>
-						
+
+
+
 						</view>
-						
+
 					</view>
 					<view class="flex align-center" style="height: 40px;">
 
 					</view>
 
 				</view>
-				<view class="position-absolute top-0 right-0 bottom-0" style="background-color: rgba(0,0,0,0.8);">
+
+                <!-- 弹框 -->
+				<view v-if="fullScreenStatus && popUpFrame" class="position-absolute top-0 right-0 bottom-0 flex flex-column" style="background-color: rgba(0,0,0,0.8);">
+					<!-- 速度 -->
+					<view class="flex-1" style="width: 100px;">
+						
+					</view>
+					
 				</view>
 
 			</view>
-			<!-- nvue的渲染是从上向下进行的渲染  :style动态的绑定全屏与单竖屏的高宽-->
+			<!-- nvue的渲染是从上向下进行的渲染，写在下面的渲染速度高于上面 :style动态的绑定全屏与单竖屏的高宽-->
 		</video>
 
 		<!--  不是全屏 -->
@@ -167,6 +199,7 @@
 				dbcount: 0, //点击次数
 				touchType: null,
 				fullScreenStatus: false, //全屏状态，默认不是全屏
+				popUpFrame:false,//弹框
 			}
 		},
 
@@ -218,7 +251,7 @@
 
 			domModule.addRule('fontFace', {
 				'fontFamily': "iconfont", //这里的fontfamily命名最好是和class中fontsize一致
-				'src': "url('http://at.alicdn.com/t/c/font_2852955_of1w6jui8j.ttf')" //阿里图标库的在线生成地址网页链接
+				'src': "url('http://at.alicdn.com/t/c/font_2852955_rd2gu9j5ej.ttf')" //阿里图标库的在线生成地址网页链接
 			});
 		},
 

@@ -22,6 +22,7 @@
 				width: 0, //进度条的总宽度
 				left: 0, //圆点
 				moveStatus: false, //用户拖动进度条
+				leftDistance:0,
 			}
 		},
 		props: {
@@ -30,7 +31,16 @@
 		},
 
 		created() {
-			this.width = this.v.windowWidth - 44 - 44 - 80 - 15; //232px,44是两边按钮的图标大小,80是文字大小
+			if (!this.v.fullScreenStatus) {
+				this.leftDistance=44
+				this.width = this.v.windowWidth - 44 - 44 - 80 - 15; //232px,44是两边按钮的图标大小,80是文字大小
+			}else{
+				this.leftDistance=15
+				this.width = this.v.windowHeight - 30 - 15; //232px,44是两边按钮的图标大小,80是文字大小
+				
+			}
+
+
 
 			this.active()
 		},
@@ -66,7 +76,7 @@
 			//e是api触摸事件默认的事件对象
 			propressMoveStart(e) {
 				this.moveStatus = true
-				let pointPropress = e.changedTouches[0].screenX - 44
+				let pointPropress = e.changedTouches[0].screenX - this.leftDistance
 				if (pointPropress > this.width) {
 					pointPropress = this.width
 					this.left = pointPropress
@@ -89,7 +99,7 @@
 
 			propressMove(e) {
 				this.moveStatus = true
-				let propressRround = e.changedTouches[0].screenX - 44
+				let propressRround = e.changedTouches[0].screenX - leftDistance
 
 				if (propressRround < 0) {
 					propressRround = 0
@@ -97,7 +107,7 @@
 					propressRround = this.width
 				} else {
 					this.left = propressRround
-				} 
+				}
 				this.$emit('update', this.currentTime)
 			} //进度条移动
 		}
