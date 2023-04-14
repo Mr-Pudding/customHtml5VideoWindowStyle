@@ -97,7 +97,7 @@
 					propressRround = this.width
 				} else {
 					this.left = propressRround
-				}
+				} 
 				this.$emit('update', this.currentTime)
 			} //进度条移动
 		}

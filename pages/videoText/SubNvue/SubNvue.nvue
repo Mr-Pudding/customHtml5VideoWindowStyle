@@ -8,7 +8,7 @@
 			<view class="position-absolute flex align-center justify-center" :style="videoFullScreen">
 				<!-- 双击事件蒙板 -->
 				<view @touchstart="modalTouchS" @touchmove="modalTouchM" @touchend="modalTouchE"
-					class="position-absolute left-0 right-0" :style="modalStyle"></view>
+					class="position-absolute  left-0 right-0 bottom-0 top-0"></view>
 				<!-- 提示框 -->
 				<view v-if="staticTime" class="p-2 rounded" style="background-color: rgba(0,0,0,0.3);">
 					<text v-if="promptBoxStatus.type=='time'"
@@ -17,13 +17,72 @@
 						class="font text-white">{{promptBoxStatus.message}}</text>
 
 				</view>
+				<!-- 全屏后的控制条 -->
+				<!-- 顶部 -->
+				<view v-if="bottomOrTopControlBarShow && fullScreenStatus"
+					class="video-opctay-top position-absolute top-0 left-0 right-0">
+					<!-- <view style="height: 26px;"></view> -->
+					<view style="height: 26px;" class="flex align-center">
+						<view class="video-btn " @click="fullOrExitScreen()">
+							<!-- 返回按钮 -->
+							<text class="iconfont" style="font-size: 20px; color:#036EB8">&#xe623;</text>
+							<!-- 这里的&#xe623;是阿里图标库的图像在线代码 -->
+							<!-- text标签不要换行，在nvue中默认换行他也换行 -->
+						</view>
+						<view class="flex justify-center align-center"><text
+								class="ml-3 text-white">标题sdsbajdajhbaddHSJfFBJJFfjhbh</text></view>
+					</view>
+				</view>
+
+				<!-- 底部 -->
+				<view v-if="bottomOrTopControlBarShow && fullScreenStatus"
+					class=" video-opctay-bot position-absolute bottom-0 left-0 right-0">
+					<view class="" style="height: 88px;">
+						<!-- 控制条的样式配置！！！！非常重要！！！ -->
+						<view class="flex-1 flex align-center">
+							
+						<progress :curTime="currentTime" :duration="duration" @valueChange="propressValueChange"
+							@update="screenTimeUpdate"></progress>
+						</view>
+						
+						<view class="flex align-stretch" style="height: 40px;">
+							<!-- align-stretch是css flex样式中align-item:stretch属性，作用是	默认。项目被拉伸以适合容器。 -->
+							<view class="video-btn" @click="videoPlayOrPaused()">
+								<!-- 播放按钮 -->
+								<text class="iconfont" v-if="!isplay" style="font-size: 30px; color:#036EB8">&#xe62f;</text>
+								<!-- 暂停按钮 -->
+								<text class="iconfont" v-else style="font-size: 30px; color:#036EB8">&#xe626;</text>
+							</view>
+						
+							<view class="flex align-center justify-center" style="width: 80px;"><text
+									class="font-sm text-white">{{currentTime|formatTime}}/{{duration|formatTime}}</text>
+							</view><!-- 时间文本显示 -->
+						
+							<view class="video-btn ">
+								<!-- 放大按钮 -->
+								<text @click="fullOrExitScreen()" class="iconfont"
+									style="font-size: 30px; color:#036EB8">&#xe60d;</text>
+							</view>
+						
+						</view>
+						
+					</view>
+					<view class="flex align-center" style="height: 40px;">
+
+					</view>
+
+				</view>
+				<view class="position-absolute top-0 right-0 bottom-0" style="background-color: rgba(0,0,0,0.8);">
+				</view>
+
 			</view>
 			<!-- nvue的渲染是从上向下进行的渲染  :style动态的绑定全屏与单竖屏的高宽-->
 		</video>
 
 		<!--  不是全屏 -->
 		<!-- 自定义视频顶部 -->
-		<view v-if="bottomOrTopControlBarShow && !fullScreenStatus" class="video-opctay-top position-fixed top-0 left-0 right-0">
+		<view v-if="bottomOrTopControlBarShow && !fullScreenStatus"
+			class="video-opctay-top position-fixed top-0 left-0 right-0">
 			<!-- <view :style="'height'+statusBarHeight+'px'"></view> -->
 			<view style="height: 26px;"></view>
 			<view style="height: 26px;" class="flex align-center">
@@ -37,7 +96,8 @@
 		</view>
 
 		<!-- 自定义视频底部-->
-		<view v-if="bottomOrTopControlBarShow && !fullScreenStatus" class=" video-opctay-bot position-fixed bottom-0 left-0 right-0">
+		<view v-if="bottomOrTopControlBarShow && !fullScreenStatus"
+			class=" video-opctay-bot position-fixed bottom-0 left-0 right-0">
 			<view class="flex align-stretch" style="height: 40px;">
 				<!-- align-stretch是css flex样式中align-item:stretch属性，作用是	默认。项目被拉伸以适合容器。 -->
 				<view class="video-btn" @click="videoPlayOrPaused()">
@@ -57,7 +117,8 @@
 
 				<view class="video-btn ">
 					<!-- 放大按钮 -->
-					<text @click="fullOrExitScreen()" class="iconfont" style="font-size: 30px; color:#036EB8">&#xe60d;</text>
+					<text @click="fullOrExitScreen()" class="iconfont"
+						style="font-size: 30px; color:#036EB8">&#xe60d;</text>
 				</view>
 
 			</view>
@@ -70,6 +131,8 @@
 	import progress from "../components/progress.vue"
 
 	let videoCtx = null //获取video的节点
+
+	let res = uni.getSystemInfoSync() //同步获取页面的状态栏信息
 
 	let promptBoxStatusShowSTOut = null //提示框的定时器
 
@@ -98,13 +161,12 @@
 				oldTouchs: {
 
 				},
-
 				oldValue: {
 
 				},
 				dbcount: 0, //点击次数
 				touchType: null,
-				fullScreenStatus:false,//全屏状态，默认不是全屏
+				fullScreenStatus: false, //全屏状态，默认不是全屏
 			}
 		},
 
@@ -117,14 +179,14 @@
 		computed: {
 			//屏幕状态大小计算
 			videoFullScreen() {
-				return this.screenStatus ? `width:${this.windowWidth}; height:${this.windowHeight}` :
-					'width:750rpx;height:225px;'
+				return this.screenStatus ? `width:${this.windowHeight}px; height:${this.windowWidth}px` :
+					'width:750rpx;height:225px;' //这里的是计算全屏后的大小，用的应该是uni.getWindowInfo(),并且宽高显示好像相反
 			},
 
-			modalStyle() {
-				let top = this.statusBarHeight + 44
-				return `top:${top}px;bottom:44px` //计算蒙板的高度
-			}
+			// modalStyle() {
+			// 	let top = this.statusBarHeight + 44
+			// 	return `top:${top}px;bottom:44px` //计算蒙板的高度
+			// }
 		},
 
 		//组件
@@ -145,13 +207,14 @@
 			}
 		},
 
+
 		created() { //在页面创建的时候
 			// console.log(uni.getSystemInfoSync())
-			let res = uni.getSystemInfoSync() //同步获取页面的状态栏信息
+			let screen = uni.getWindowInfo()
 			this.statusBarHeight = res.statusBarHeight
 
-			this.windowHeight = res.windowHeight
-			this.windowWidth = res.windowWidth //400
+			this.windowHeight = screen.screenHeight
+			this.windowWidth = screen.screenWidth //400
 
 			domModule.addRule('fontFace', {
 				'fontFamily': "iconfont", //这里的fontfamily命名最好是和class中fontsize一致
@@ -190,7 +253,7 @@
 					this.controlBarShowStatus()
 
 					let newCurrentTime = (newTouchs.pageX - this.oldTouchs.pageX) / 250 * this.duration * 2 + this.oldValue
-						.currentTime * 1//核心算法拖动屏幕
+						.currentTime * 1 //核心算法拖动屏幕
 
 					newCurrentTime = newCurrentTime > this.duration ? this.duration : newCurrentTime
 
@@ -226,7 +289,7 @@
 					}
 				}
 				this.touchType = null
-				this.staticTime = false//关闭提示框
+				this.staticTime = false //关闭提示框
 			}, //蒙版结束，自定义单击，双击
 
 			//显示或隐藏控制条
@@ -275,19 +338,21 @@
 			},
 
 			fullScreenChange(e) {
-				this.fullScreenStatus=e.detail.fullScreen
+				this.fullScreenStatus = e.detail.fullScreen
 			}, //当视频进入和退出全屏时触发，event.detail = {fullScreen, direction}，direction取为 vertical 或 horizontal
-			
-			fullOrExitScreen(){
-				if(this.fullScreenStatus){
-					videoCtx.exitFullScreen()//退出全屏
-				}else{
-					videoCtx.requestFullScreen()//进入全屏
+
+			fullOrExitScreen() {
+				if (this.fullScreenStatus) {
+					this.screenStatus = false
+					videoCtx.exitFullScreen() //退出全屏
+				} else {
+					this.screenStatus = true
+					videoCtx.requestFullScreen() //进入全屏
 				}
 				//requestFullScreen进入全屏，可传{direction}参数
 				//exitFullScreen退出全屏
-			},//点击事件进入或者退出全屏
-			
+			}, //点击事件进入或者退出全屏
+
 
 			timeupdate(e) {
 				if (!this.staticTime) {
