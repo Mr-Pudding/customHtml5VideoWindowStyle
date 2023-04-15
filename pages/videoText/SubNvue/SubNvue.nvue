@@ -9,6 +9,15 @@
 				<!-- 双击事件蒙板 -->
 				<view @touchstart="modalTouchS" @touchmove="modalTouchM" @touchend="modalTouchE"
 					class="position-absolute  left-0 right-0 bottom-0 top-0"></view>
+					
+					<!-- 侧边锁屏 -->
+					<view v-if="fullScreenStatus&&(bottomOrTopControlBarShow||lockScreenStatus)"  class="position-absolute top-0 right-0 bottom-0 flex align-center justify-center" style="width: 100px; ">
+						<view @click="lockScreen" class="rounded-lg flex align-center justify-center" style="width: 50px; height:50px; background-color: rgba(0,0,0,0.4);">
+							<text v-if="lockScreenStatus" class="iconfont"  style="color:#036EB8; font-size:30px " >&#xe6f6;</text>
+							<text v-else class="iconfont"  style="color:#036EB8; font-size:30px " >&#xe707;</text>
+						</view>
+					</view>
+					
 				<!-- 提示框 -->
 				<view v-if="staticTime" class="p-2 rounded" style="background-color: rgba(0,0,0,0.3);">
 					<text v-if="promptBoxStatus.type=='time'"
@@ -82,7 +91,7 @@
 
 								<view class="flex align-center"
 									style="height: 40px; padding-left:15px;padding-right:15px ;">
-									<text class="text-white" style="font-size: 15px;">倍数</text>
+									<text @click="openPopupShow('speed')" class="text-white" style="font-size: 15px;">{{rate}}X</text>
 								</view>
 
 							</view>
@@ -98,13 +107,17 @@
 
 				</view>
 
-                <!-- 弹框 -->
-				<view v-if="fullScreenStatus && popUpFrame" class="position-absolute top-0 right-0 bottom-0 flex flex-column" style="background-color: rgba(0,0,0,0.8);">
+				<!-- 弹框 -->
+				<view v-if="fullScreenStatus && popUpFrame"
+					class="position-absolute top-0 right-0 bottom-0 flex flex-column"
+					style="background-color: rgba(0,0,0,0.8);">
 					<!-- 速度 -->
-					<view class="flex-1" style="width: 100px;">
-						
+					<view v-if="popUpFrameType==='speed'" class="flex-1 flex-column "  style="width: 100px;">
+                          <view class="flex flex-1 justify-center align-center" v-for="(rateChange,index) in rateList" :key="index"> 
+						  <text @click="speedChange(rateChange)" :style="rateChange ===rate? 'color: #036EB8;' : 'color: white;'">{{rateChange}}</text>
+						  </view>
 					</view>
-					
+
 				</view>
 
 			</view>
@@ -199,7 +212,12 @@
 				dbcount: 0, //点击次数
 				touchType: null,
 				fullScreenStatus: false, //全屏状态，默认不是全屏
-				popUpFrame:false,//弹框
+				popUpFrame: false, //弹框
+				popUpFrameType: "speed", //弹框标志，抽屉
+
+				rate: '1.0', //当前速度
+				rateList: ['2.0', '1.5', '1.25', '1.0', '0.8', '0.5'],//速度选择
+				lockScreenStatus:false,//屏幕状态
 			}
 		},
 
@@ -251,7 +269,7 @@
 
 			domModule.addRule('fontFace', {
 				'fontFamily': "iconfont", //这里的fontfamily命名最好是和class中fontsize一致
-				'src': "url('http://at.alicdn.com/t/c/font_2852955_rd2gu9j5ej.ttf')" //阿里图标库的在线生成地址网页链接
+				'src': "url('http://at.alicdn.com/t/c/font_2852955_kgdgy1oi2a.ttf')" //阿里图标库的在线生成地址网页链接
 			});
 		},
 
@@ -261,6 +279,33 @@
 		}, //直接使用 ref，例如 this.$refs.video1
 
 		methods: {
+			//锁屏或者解除锁屏
+			lockScreen(){
+				this.lockScreenStatus=!this.lockScreenStatus
+				if(this.lockScreenStatus){
+					this.controlBarHideStatus()//隐藏状态栏
+				}else{
+					this.controlBarShowStatus()
+				}
+			},
+			
+			
+			//修改速度
+			speedChange(change){
+                 this.rate=change
+				 videoCtx.playbackRate(this.rate)
+				 uni.showToast({
+				 	title:`当前速度已修改为:${this.rate}倍数`,
+					icon:'none'
+				 })
+				 this.popUpFrame=false
+			},//api接口,uni.createVideoContext(videoId, this)
+			
+			openPopupShow(type){
+				this.popUpFrameType=type
+				this.popUpFrame=true//显示抽屉
+				
+			},
 
 			modalTouchS(e) {
 				this.oldTouchs = e.changedTouches[0]
@@ -271,6 +316,9 @@
 			}, //蒙版开始触摸
 
 			modalTouchM(e) {
+				if(this.lockScreenStatus){
+					return
+				}
 				let newTouchs = e.changedTouches[0] //获取新的坐标
 				if (!this.touchType) {
 					this.touchType = Math.abs(newTouchs.pageX - this.oldTouchs.pageX) > 20 ? 'current' : null
@@ -298,6 +346,10 @@
 			}, //蒙版移动中
 
 			modalTouchE(e) {
+				if(this.lockScreenStatus){
+					return
+				}
+				
 				if (this.touchType === 'current') {
 					videoCtx.seek(this.currentTime)
 					videoCtx.play()
@@ -310,7 +362,7 @@
 						setTimeout(() => {
 							if (this.dbcount === 1) {
 								// console.log("单击")
-
+                                 this.popUpFrame=false
 								this.controlShowOrHide()
 							} //单击
 							if (this.dbcount === 2) {
